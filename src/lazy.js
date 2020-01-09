@@ -111,7 +111,7 @@ export default function (Vue) {
         return Vue.nextTick(this.lazyLoadHandler)
       }
 
-      let { src, loading, error } = this._valueFormatter(binding.value)
+      let { src, loading, error, throttleWait } = this._valueFormatter(binding.value)
 
       Vue.nextTick(() => {
         src = getBestSelectionFromSrcset(el, this.options.scale) || src
@@ -137,6 +137,7 @@ export default function (Vue) {
           loading,
           error,
           src,
+          throttleWait,
           elRenderer: this._elRenderer.bind(this),
           options: this.options,
           imageCache: this._imageCache
@@ -161,7 +162,7 @@ export default function (Vue) {
     * @return
     */
     update (el, binding, vnode) {
-      let { src, loading, error } = this._valueFormatter(binding.value)
+      let { src, loading, error, throttleWait } = this._valueFormatter(binding.value)
       src = getBestSelectionFromSrcset(el, this.options.scale) || src
 
       const exist = find(this.ListenerQueue, item => item.el === el)
@@ -171,7 +172,8 @@ export default function (Vue) {
         exist.update({
           src,
           loading,
-          error
+          error,
+          throttleWait
         })
       }
       if (this._observer) {
@@ -345,7 +347,11 @@ export default function (Vue) {
         }
         const catIn = listener.checkInView()
         if (!catIn) return
-        listener.load()
+        if (listener.throttleWait) {
+          throttle(listener.load(), listener.throttleWait);
+        } else {
+          listener.load()
+        }
       })
       freeList.forEach(item => {
         remove(this.ListenerQueue, item)
@@ -436,18 +442,20 @@ export default function (Vue) {
       let src = value
       let loading = this.options.loading
       let error = this.options.error
-
+      let throttleWait = 0;
       // value is object
       if (isObject(value)) {
         if (!value.src && !this.options.silent) console.error('Vue Lazyload warning: miss src with ' + value)
         src = value.src
         loading = value.loading || this.options.loading
         error = value.error || this.options.error
+        throttleWait = value.throttleWait || 0;
       }
       return {
         src,
         loading,
-        error
+        error,
+        throttleWait
       }
     }
   }
