@@ -12,7 +12,7 @@ import {
 // }
 
 export default class ReactiveListener {
-  constructor ({ el, src, error, loading, bindType, $parent, options, elRenderer, imageCache }) {
+  constructor ({ el, src, error, loading, bindType, $parent, options, elRenderer, imageCache, throttleWait }) {
     this.el = el
     this.src = src
     this.error = error
@@ -35,7 +35,7 @@ export default class ReactiveListener {
       loadStart: 0,
       loadEnd: 0
     }
-
+    this.throttleWait = throttleWait;
     this.filter()
     this.initState()
     this.render('loading', false)

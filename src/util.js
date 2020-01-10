@@ -158,7 +158,7 @@ function supportWebp () {
 
 function throttle (action, delay) {
   let timeout = null
-  let lastRun = 0
+  let lastRun = Date.now()
   return function () {
     if (timeout) {
       return
@@ -300,6 +300,9 @@ function ArrayFrom (arrLike) {
 
 function noop () {}
 
+function getRandom(value = 3) {
+  return (Math.random() * value).toFixed(2);
+}
 class ImageCache {
   constructor ({ max }) {
     this.options = {
@@ -326,6 +329,7 @@ class ImageCache {
 }
 
 export {
+  getRandom,
   ImageCache,
   inBrowser,
   CustomEvent,

@@ -14,7 +14,8 @@ import {
   isObject,
   hasIntersectionObserver,
   modeType,
-  ImageCache
+  ImageCache,
+  getRandom
 } from './util'
 
 import ReactiveListener from './listener'
@@ -348,7 +349,8 @@ export default function (Vue) {
         const catIn = listener.checkInView()
         if (!catIn) return
         if (listener.throttleWait) {
-          throttle(listener.load(), listener.throttleWait);
+          let cb = throttle(listener.load, listener.throttleWait);
+          cb.call(listener);
         } else {
           listener.load()
         }
@@ -383,7 +385,12 @@ export default function (Vue) {
           this.ListenerQueue.forEach(listener => {
             if (listener.el === entry.target) {
               if (listener.state.loaded) return this._observer.unobserve(listener.el)
-              listener.load()
+                if (listener.throttleWait) {
+                  let cb = throttle(listener.load, listener.throttleWait);
+                  cb.call(listener);
+                } else {
+                  listener.load()
+                }
             }
           })
         }
@@ -442,14 +449,19 @@ export default function (Vue) {
       let src = value
       let loading = this.options.loading
       let error = this.options.error
-      let throttleWait = 0;
+      let throttleWait = value.throttleWait || 0;
+      if (value.throttleWait === 'auto') {
+        throttleWait = 3000;
+      }
+      if (value.throttleWait === 'random') {
+        throttleWait = getRandom(3) * 1000;
+      }
       // value is object
       if (isObject(value)) {
         if (!value.src && !this.options.silent) console.error('Vue Lazyload warning: miss src with ' + value)
         src = value.src
         loading = value.loading || this.options.loading
         error = value.error || this.options.error
-        throttleWait = value.throttleWait || 0;
       }
       return {
         src,
